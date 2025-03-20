@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Palash Chandra Das TAMU Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+
+  <style>
+    #map { height: 600px; }
+    .info {
+      padding: 6px 8px;
+      font: 14px/16px Arial, Helvetica, sans-serif;
+      background: rgba(255,255,255,0.8);
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 5px;
+    }
+    .info h4 {
+      margin: 0 0 5px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+
+  <!-- Load TAMU Buildings GeoJSON JS -->
+  <script src="tamubuildings.js"></script>
+
+<script>
+  var map = L.map('map').setView([30.6187, -96.3365], 16);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  function buildingStyle(feature) {
+    return {
+      fillColor: '#500000',
+      weight: 2,
+      opacity: 1,
+      color: '#ffffff',
+      dashArray: '3',
+      fillOpacity: 0.7
+    };
+  }
+
+  var info = L.control();
+
+  info.onAdd = function(map) {
+    this._div = L.DomUtil.create('div', 'info');
+    this.update();
+    return this._div;
+  };
+
+  // To match tamubuildings.js attributes
+  info.update = function (props) {
+    this._div.innerHTML = '<h4>BldgName and BldgAbbr</h4>' + (props ?
+      '<b>' + props.BldgName + '</b><br />' + props.BldgAbbr
+      : 'Hover over a building');
+  };
+
+  info.addTo(map);
+
+  var geojsonLayer;
+
+  function highlightFeature(e) {
+    var layer = e.target;
+    layer.setStyle({
+      weight: 4,
+      color: '#ffcc00',
+      dashArray: '',
+      fillOpacity: 0.9
+    });
+    layer.bringToFront();
+    info.update(layer.feature.properties);
+  }
+
+  function resetHighlight(e) {
+    geojsonLayer.resetStyle(e.target);
+    info.update();
+  }
+
+  function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
+  }
+
+  function onEachFeature(feature, layer) {
+    layer.on({
+      mouseover: highlightFeature,
+      mouseout: resetHighlight,
+      click: zoomToFeature
+    });
+  }
+
+  // Using variable 'tamu' from tamubuildings.js
+  geojsonLayer = L.geoJSON(tamu, {
+    style: buildingStyle,
+    onEachFeature: onEachFeature
+  }).addTo(map);
+</script>
+
+</body>
+</html>
